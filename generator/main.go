@@ -114,6 +114,40 @@ type generator struct {
 	fonts     map[string]*truetype.Font
 }
 
+type Generator struct {
+	generator
+}
+
+func (this *Generator) GetImages() map[string][]image.Image {
+	return this.imageSets
+}
+
+func (this *Generator) GetFonts() map[string]*truetype.Font {
+	return this.fonts
+}
+
+func (this *Generator) IsFont(fontName string) bool {
+	if this.fonts[fontName] == nil {
+		return false
+	}
+	return true
+}
+
+func (this *Generator) IsImageSet(imageSetName string) bool {
+	if this.imageSets[imageSetName] == nil {
+		return false
+	}
+	return true
+}
+
+func (this *Generator) LoadFonts() {
+	this.loadFonts()
+}
+
+func (this *Generator) LoadImagesSets(imageWidth int) {
+	this.loadImagesSets(imageWidth)
+}
+
 func (this *generator) loadFonts() {
 	var fonts = make(map[string]*truetype.Font)
 	filenames, err := filepath.Glob(FONTS_FOLDER + "*.ttf")

@@ -55,7 +55,11 @@ func main() {
 	}
 
 	if port > 0 {
-		if err = web.Start(port); err != nil {
+		gen := &generator.Generator{}
+		gen.LoadFonts()
+		gen.LoadImagesSets(imageWidth)
+
+		if err = web.Start(gen, port); err != nil {
 			log.Panic(err)
 		}
 	} else {

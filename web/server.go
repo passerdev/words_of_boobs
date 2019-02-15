@@ -23,7 +23,7 @@ func writeLog(value string) {
 	f.Close()
 }
 
-func Start(port int) error {
+func Start(sets *generator.Generator, port int) error {
 	http.Handle("/", http.FileServer(http.Dir("./html")))
 	http.Handle("/img/", http.StripPrefix("/img/", http.FileServer(http.Dir("./results"))))
 	http.HandleFunc("/api/generate", func(w http.ResponseWriter, r *http.Request) {
@@ -31,7 +31,7 @@ func Start(port int) error {
 			values         []string
 			filename, text string
 			fontName       string
-			imgSetName     string
+			imgCategory    string
 			ok             bool
 			width          int = 0
 			err            error
@@ -65,22 +65,22 @@ func Start(port int) error {
 			return
 		}
 		fontName = string(values[0])
-		if utf8.RuneCountInString(fontName) > 24 {
-			w.Write([]byte("error: maximum font name length = 24 symbols"))
+		if utf8.RuneCountInString(fontName) > 24 || !sets.IsFont(fontName) {
+			w.Write([]byte("error: wrong font name"))
 			return
 		}
 
-		if values, ok = params["setname"]; !ok {
-			w.Write([]byte("error: no setname parameter"))
+		if values, ok = params["category"]; !ok {
+			w.Write([]byte("error: no category parameter"))
 			return
 		}
-		imgSetName = string(values[0])
-		if utf8.RuneCountInString(imgSetName) > 15 {
-			w.Write([]byte("error: maximum set of img name length = 15 symbols"))
+		imgCategory = string(values[0])
+		if utf8.RuneCountInString(imgCategory) > 15 || !sets.IsImageSet(imgCategory) {
+			w.Write([]byte("error: wrong img category name"))
 			return
 		}
 
-		filename, err = generator.GenerateImageForText(text, fontName, imgSetName, 1000, width)
+		filename, err = generator.GenerateImageForText(text, fontName, imgCategory, 1000, width)
 		if err != nil {
 			log.Println(err)
 			w.Write([]byte("error: something wrong"))
@@ -93,38 +93,23 @@ func Start(port int) error {
 	})
 
 	http.HandleFunc("/api/sets", func(w http.ResponseWriter, r *http.Request) {
-		type sets struct {
+		type trSets struct {
 			Imgs  []string `json:"imgs"`
 			Fonts []string `json:"fonts"`
 		}
-
-		s := sets{
-			Imgs: []string{
-				"boobs",
-				"it",
-				"stiic",
-			},
-			Fonts: []string{
-				"NotoSans-Bold.ttf",
-				"NotoSans-BoldItalic.ttf",
-				"NotoSans-Italic.ttf",
-				"NotoSans-Regular.ttf",
-				"NotoSerif-Bold.ttf",
-				"Oswald-Bold.ttf",
-				"Oswald-ExtraLight.ttf",
-				"Oswald-Light.ttf",
-				"Oswald-Medium.ttf",
-				"Oswald-Regular.ttf",
-				"Oswald-SemiBold.ttf",
-				"Oxygen-Bold.ttf",
-				"Oxygen-Light.ttf",
-				"Oxygen-Regular.ttf",
-				"SourceSansPro-Bold.ttf",
-				"Symbola.ttf",
-			},
+		st := trSets{}
+		imgs := sets.GetImages()
+		fonts := sets.GetFonts()
+		st.Fonts = make([]string, 0, len(imgs))
+		st.Imgs = make([]string, 0, len(fonts))
+		for k := range imgs {
+			st.Imgs = append(st.Imgs, k)
 		}
-		res, _ := json.Marshal(s)
+		for k := range fonts {
+			st.Fonts = append(st.Fonts, k)
+		}
 
+		res, _ := json.Marshal(st)
 		w.Write(res)
 	})
 
