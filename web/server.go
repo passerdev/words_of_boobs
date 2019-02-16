@@ -61,20 +61,20 @@ func Start(sets *generator.Generator, port int) error {
 		}
 
 		if values, ok = params["font"]; !ok {
-			w.Write([]byte("error: no font parameter"))
-			return
+			fontName = generator.DEFAULT_FONT
+		} else {
+			fontName = string(values[0])
 		}
-		fontName = string(values[0])
 		if utf8.RuneCountInString(fontName) > 24 || !sets.IsFont(fontName) {
 			w.Write([]byte("error: wrong font name"))
 			return
 		}
 
 		if values, ok = params["category"]; !ok {
-			w.Write([]byte("error: no category parameter"))
-			return
+			imgCategory = generator.DEFAULT_IMG
+		} else {
+			imgCategory = string(values[0])
 		}
-		imgCategory = string(values[0])
 		if utf8.RuneCountInString(imgCategory) > 15 || !sets.IsImageSet(imgCategory) {
 			w.Write([]byte("error: wrong img category name"))
 			return

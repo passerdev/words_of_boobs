@@ -22,6 +22,8 @@ const (
 	EXAMPLES_FOLDER   = "./examples/"
 	FONT_POINTS       = 750
 	SMALL_FONT_POINTS = 100
+	DEFAULT_IMG       = "boobs"
+	DEFAULT_FONT      = "Symbola.ttf"
 )
 
 var (
