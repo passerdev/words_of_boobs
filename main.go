@@ -1,23 +1,22 @@
 package main
 
 import (
-	"./generator"
-	"./web"
 	"flag"
 	"log"
-	"./downloader"
+	"words_of_boobs/downloader"
+	"words_of_boobs/generator"
+	"words_of_boobs/web"
 )
 
 const (
-	HEIGHT      = 2000
-	WIDTH       = HEIGHT * 5
-	RECT_WIDTH  = 30
+	HEIGHT     = 2000
+	WIDTH      = HEIGHT * 5
+	RECT_WIDTH = 30
 	//RECT_HEIGHT = 30
 	IMG_FOLDER = "boobs"
 	TEXT       = "geeks"
 	FONT_NAME  = "NotoSans-Bold.ttf"
 )
-
 
 func main() {
 	var (
@@ -27,8 +26,8 @@ func main() {
 		exampleImage string
 		fontName     string
 		imagesFolder string
-		port int
-		download string
+		port         int
+		download     string
 	)
 	flag.StringVar(&text, "text", TEXT, "a string")
 	flag.IntVar(&width, "width", WIDTH, "an int")
@@ -39,7 +38,6 @@ func main() {
 	flag.IntVar(&port, "port", 0, "port for service")
 	flag.StringVar(&download, "download", "", "query for downloading")
 	flag.Parse()
-
 
 	var err error
 	//generator.Reload(imageWidth)
@@ -57,7 +55,11 @@ func main() {
 	}
 
 	if port > 0 {
-		if err = web.Start(port); err != nil {
+		gen := &generator.Generator{}
+		gen.LoadFonts()
+		gen.LoadImagesSets(imageWidth)
+
+		if err = web.Start(gen, port); err != nil {
 			log.Panic(err)
 		}
 	} else {

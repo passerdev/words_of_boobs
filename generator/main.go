@@ -1,27 +1,29 @@
 package generator
 
 import (
-	"regexp"
-	"image"
 	"github.com/fogleman/gg"
-	"math"
-	"io/ioutil"
-	"log"
 	"github.com/golang/freetype"
 	"github.com/golang/freetype/truetype"
-	"path/filepath"
+	"image"
 	"image/draw"
+	"io/ioutil"
+	"log"
+	"math"
 	"math/rand"
+	"path/filepath"
+	"regexp"
 	"time"
 )
 
 const (
-	FONTS_FOLDER   = "./fonts/"
-	IMAGES_FOLDER  = "./img/"
-	RESULTS_FOLDER = "./results/"
-	EXAMPLES_FOLDER = "./examples/"
-	FONT_POINTS = 750
+	FONTS_FOLDER      = "./fonts/"
+	IMAGES_FOLDER     = "./img/"
+	RESULTS_FOLDER    = "./results/"
+	EXAMPLES_FOLDER   = "./examples/"
+	FONT_POINTS       = 750
 	SMALL_FONT_POINTS = 100
+	DEFAULT_IMG       = "boobs"
+	DEFAULT_FONT      = "Symbola.ttf"
 )
 
 var (
@@ -34,7 +36,7 @@ func init() {
 	g.imageSets = make(map[string][]image.Image)
 	g.fonts = make(map[string]*truetype.Font)
 
-	textContext.LoadFontFace(FONTS_FOLDER + "Symbola.ttf", SMALL_FONT_POINTS)
+	textContext.LoadFontFace(FONTS_FOLDER+"Symbola.ttf", SMALL_FONT_POINTS)
 }
 
 func getTextSize(text string) (width float64, height float64) {
@@ -45,12 +47,10 @@ func getTextSize(text string) (width float64, height float64) {
 	return
 }
 
-
 func Reload(imageWidth int) {
 	g.loadFonts()
 	g.loadImagesSets(imageWidth)
 }
-
 
 func prepareFont(fontName string) (f *truetype.Font, err error) {
 	fontBytes, err := ioutil.ReadFile(fontName)
@@ -61,7 +61,6 @@ func prepareFont(fontName string) (f *truetype.Font, err error) {
 	f, err = freetype.ParseFont(fontBytes)
 	return
 }
-
 
 func isPng(filename string) bool {
 	re := regexp.MustCompile("\\.png$")
@@ -93,14 +92,13 @@ func prepareImage(filename string, width int) (source image.Image, err error) {
 	return ctx.Image(), err
 }
 
-
 func drawImage(ctx *gg.Context, img image.Image, x int, y int, filledDots *dotsManager) {
 	size := img.Bounds().Size()
 	imgWidth, imgHeight := size.X, size.Y
 	x -= imgWidth / 2
 	y -= imgHeight / 2
-	for i := x; i < x + imgWidth; i++ {
-		for j := y; j < y + imgHeight; j++ {
+	for i := x; i < x+imgWidth; i++ {
+		for j := y; j < y+imgHeight; j++ {
 			filledDots.addDot(i, j)
 		}
 	}
@@ -113,13 +111,44 @@ func getFilename() string {
 	return t.Format("20060102150405") + ".png"
 }
 
-
 type generator struct {
 	imageSets map[string][]image.Image
-	fonts map[string]*truetype.Font
+	fonts     map[string]*truetype.Font
 }
 
+type Generator struct {
+	generator
+}
 
+func (this *Generator) GetImages() map[string][]image.Image {
+	return this.imageSets
+}
+
+func (this *Generator) GetFonts() map[string]*truetype.Font {
+	return this.fonts
+}
+
+func (this *Generator) IsFont(fontName string) bool {
+	if this.fonts[fontName] == nil {
+		return false
+	}
+	return true
+}
+
+func (this *Generator) IsImageSet(imageSetName string) bool {
+	if this.imageSets[imageSetName] == nil {
+		return false
+	}
+	return true
+}
+
+func (this *Generator) LoadFonts() {
+	this.loadFonts()
+}
+
+func (this *Generator) LoadImagesSets(imageWidth int) {
+	this.loadImagesSets(imageWidth)
+}
 
 func (this *generator) loadFonts() {
 	var fonts = make(map[string]*truetype.Font)
@@ -161,23 +190,19 @@ func (this *generator) loadImagesSets(imageWidth int) {
 	}
 }
 
-
-
-
 func (this *generator) process(source image.Image, imgSet string) (filename string) {
 	var (
-		bg = image.White
-		img draw.Image
-		sourceCtx = gg.NewContextForImage(source)
-		ctx    *gg.Context
-		allDots = createDots()
+		bg         = image.White
+		img        draw.Image
+		sourceCtx  = gg.NewContextForImage(source)
+		ctx        *gg.Context
+		allDots    = createDots()
 		filledDots = createDots()
 		r, g, b, a uint32
 	)
 
-
-	for i := 0; i < sourceCtx.Width(); i ++ {
-		for j := 0; j < sourceCtx.Height(); j ++ {
+	for i := 0; i < sourceCtx.Width(); i++ {
+		for j := 0; j < sourceCtx.Height(); j++ {
 			r, g, b, a = source.At(i, j).RGBA()
 			if r == 0 && g == 0 && b == 0 && a != 0 {
 				allDots.addDot(i, j)
@@ -186,10 +211,9 @@ func (this *generator) process(source image.Image, imgSet string) (filename stri
 	}
 
 	padding := sourceCtx.Width() / 20
-	img = image.NewRGBA(image.Rect(0, 0, sourceCtx.Width() + padding * 2, sourceCtx.Height()))
+	img = image.NewRGBA(image.Rect(0, 0, sourceCtx.Width()+padding*2, sourceCtx.Height()))
 	draw.Draw(img, img.Bounds(), bg, image.ZP, draw.Src)
 	ctx = gg.NewContextForImage(img)
-
 
 	var (
 		images []image.Image
@@ -201,7 +225,7 @@ func (this *generator) process(source image.Image, imgSet string) (filename stri
 	drawnCount := 0
 	for i := 0; i < len(points); i++ {
 		p := points[i]
-		x, y := p.x + padding, p.y
+		x, y := p.x+padding, p.y
 		if filledDots.checkDot(x, y) {
 			continue
 		}
@@ -219,13 +243,13 @@ func GenerateImageForText(text, fontName, imgSet string, height, width int) (fil
 	tw, th := getTextSize(text)
 	textWidth, textHeight := int(tw), int(th)
 
-	img := image.NewRGBA(image.Rect(0, 0, textWidth, textHeight * 2))
+	img := image.NewRGBA(image.Rect(0, 0, textWidth, textHeight*2))
 
 	f := g.fonts["Symbola.ttf"]
 
 	c := freetype.NewContext()
 	c.SetFont(f)
-	c.SetFontSize(FONT_POINTS )
+	c.SetFontSize(FONT_POINTS)
 	c.SetClip(img.Bounds())
 	c.SetDst(img)
 	c.SetSrc(image.Black)
@@ -237,7 +261,6 @@ func GenerateImageForText(text, fontName, imgSet string, height, width int) (fil
 
 	return
 }
-
 
 func GenerateImageForImage(imageName, imgSet string) (filename string, err error) {
 	var img image.Image
