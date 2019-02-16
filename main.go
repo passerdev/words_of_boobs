@@ -3,9 +3,9 @@ package main
 import (
 	"flag"
 	"log"
-	"words_of_boobs/downloader"
-	"words_of_boobs/generator"
-	"words_of_boobs/web"
+	"./downloader"
+	"./generator"
+	"./web"
 )
 
 const (
