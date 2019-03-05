@@ -8,7 +8,7 @@ import (
 	"os"
 	"strconv"
 	"unicode/utf8"
-	"words_of_boobs/generator"
+	"./../generator"
 )
 
 func writeLog(value string) {
