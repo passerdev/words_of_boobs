@@ -12,6 +12,7 @@ import (
 	"math/rand"
 	"path/filepath"
 	"regexp"
+	"sync"
 	"time"
 )
 
@@ -118,6 +119,8 @@ type generator struct {
 
 type Generator struct {
 	generator
+	ImageWidth int
+	sync.RWMutex
 }
 
 func (this *Generator) GetImages() map[string][]image.Image {
@@ -146,8 +149,57 @@ func (this *Generator) LoadFonts() {
 	this.loadFonts()
 }
 
-func (this *Generator) LoadImagesSets(imageWidth int) {
-	this.loadImagesSets(imageWidth)
+func (this *Generator) LoadImagesSets() {
+	this.loadImagesSets(this.ImageWidth)
+}
+
+func (this *Generator) UpdateImagesSet(set string) {
+	dirName := IMAGES_FOLDER + set
+
+	filenames, err := filepath.Glob(dirName + "/*")
+	if err != nil {
+		log.Panic(err)
+	}
+	re := regexp.MustCompile("\\.(png|jpg|jpeg)$")
+	images := make([]image.Image, len(filenames))
+	for i := range filenames {
+		if !re.MatchString(filenames[i]) {
+			continue
+		}
+		if images[i], err = prepareImage(filenames[i], this.ImageWidth); err != nil {
+			log.Println(filenames[i])
+			log.Panic(err)
+		}
+	}
+
+	log.Println(filenames)
+	this.Lock()
+	delete(this.imageSets, set)
+	this.imageSets[set] = images
+	this.Unlock()
+}
+
+func (this *Generator) GenerateImageForText(text, fontName, imgSet string, height, width int) (filename string, err error) {
+	tw, th := getTextSize(text)
+	textWidth, textHeight := int(tw), int(th)
+
+	img := image.NewRGBA(image.Rect(0, 0, textWidth, textHeight*2))
+
+	f := this.fonts["Symbola.ttf"]
+
+	c := freetype.NewContext()
+	c.SetFont(f)
+	c.SetFontSize(FONT_POINTS)
+	c.SetClip(img.Bounds())
+	c.SetDst(img)
+	c.SetSrc(image.Black)
+
+	pt := freetype.Pt(0, FONT_POINTS)
+
+	_, err = c.DrawString(text, pt)
+	filename = this.process(img, imgSet)
+
+	return
 }
 
 func (this *generator) loadFonts() {

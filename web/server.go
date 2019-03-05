@@ -8,7 +8,7 @@ import (
 	"os"
 	"strconv"
 	"unicode/utf8"
-	"./../generator"
+	"words_of_boobs/generator"
 )
 
 func writeLog(value string) {
@@ -23,7 +23,7 @@ func writeLog(value string) {
 	f.Close()
 }
 
-func Start(sets *generator.Generator, port int) error {
+func Start(gen *generator.Generator, port int) error {
 	http.Handle("/", http.FileServer(http.Dir("./html")))
 	http.Handle("/img/", http.StripPrefix("/img/", http.FileServer(http.Dir("./results"))))
 	http.HandleFunc("/api/generate", func(w http.ResponseWriter, r *http.Request) {
@@ -65,7 +65,7 @@ func Start(sets *generator.Generator, port int) error {
 		} else {
 			fontName = string(values[0])
 		}
-		if utf8.RuneCountInString(fontName) > 24 || !sets.IsFont(fontName) {
+		if utf8.RuneCountInString(fontName) > 24 || !gen.IsFont(fontName) {
 			w.Write([]byte("error: wrong font name"))
 			return
 		}
@@ -75,12 +75,12 @@ func Start(sets *generator.Generator, port int) error {
 		} else {
 			imgCategory = string(values[0])
 		}
-		if utf8.RuneCountInString(imgCategory) > 15 || !sets.IsImageSet(imgCategory) {
+		if utf8.RuneCountInString(imgCategory) > 15 || !gen.IsImageSet(imgCategory) {
 			w.Write([]byte("error: wrong img category name"))
 			return
 		}
 
-		filename, err = generator.GenerateImageForText(text, fontName, imgCategory, 1000, width)
+		filename, err = gen.GenerateImageForText(text, fontName, imgCategory, 1000, width)
 		if err != nil {
 			log.Println(err)
 			w.Write([]byte("error: something wrong"))
@@ -98,8 +98,8 @@ func Start(sets *generator.Generator, port int) error {
 			Fonts []string `json:"fonts"`
 		}
 		st := trSets{}
-		imgs := sets.GetImages()
-		fonts := sets.GetFonts()
+		imgs := gen.GetImages()
+		fonts := gen.GetFonts()
 		st.Fonts = make([]string, 0, len(imgs))
 		st.Imgs = make([]string, 0, len(fonts))
 		for k := range imgs {
@@ -111,6 +111,29 @@ func Start(sets *generator.Generator, port int) error {
 
 		res, _ := json.Marshal(st)
 		w.Write(res)
+	})
+
+	http.HandleFunc("/api/reload_set", func(w http.ResponseWriter, r *http.Request) {
+		var (
+			values      []string
+			imgCategory string
+			ok          bool
+		)
+		params := r.URL.Query()
+		log.Println("reload_set")
+
+		if values, ok = params["category"]; !ok {
+			imgCategory = generator.DEFAULT_IMG
+		} else {
+			imgCategory = string(values[0])
+		}
+		if utf8.RuneCountInString(imgCategory) > 15 || !gen.IsImageSet(imgCategory) {
+			w.Write([]byte("error: wrong img category name"))
+			return
+		}
+		gen.UpdateImagesSet(imgCategory)
+
+		w.Write([]byte("update category: " + imgCategory + " succefull complete"))
 	})
 
 	log.Printf("started on %d port\n", port)
