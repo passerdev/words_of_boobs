@@ -3,9 +3,9 @@ package main
 import (
 	"flag"
 	"log"
-	"./downloader"
-	"./generator"
-	"./web"
+	"words_of_boobs/downloader"
+	"words_of_boobs/generator"
+	"words_of_boobs/web"
 )
 
 const (
@@ -56,8 +56,9 @@ func main() {
 
 	if port > 0 {
 		gen := &generator.Generator{}
+		gen.ImageWidth = imageWidth
 		gen.LoadFonts()
-		gen.LoadImagesSets(imageWidth)
+		gen.LoadImagesSets()
 
 		if err = web.Start(gen, port); err != nil {
 			log.Panic(err)
